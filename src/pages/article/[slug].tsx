@@ -50,7 +50,9 @@ export default function Article() {
               over the past few years.
             </p>
             <h2 id="introducing-ionic">Introducing RealWorld.</h2>
-            <p>It's a great solution for learning how other frameworks work.</p>
+            <p>
+              It&apos;s a great solution for learning how other frameworks work.
+            </p>
             <ul className="tag-list">
               <li className="tag-default tag-pill tag-outline">realworld</li>
               <li className="tag-default tag-pill tag-outline">

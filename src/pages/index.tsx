@@ -96,8 +96,8 @@ export default function Home() {
                   </div>
                   <Link href="/article/the-song-you" className="preview-link">
                     <h1>
-                      The song you won't ever stop singing. No matter how hard
-                      you try.
+                      The song you won&apos;t ever stop singing. No matter how
+                      hard you try.
                     </h1>
                     <p>This is the description for the post.</p>
                     <span>Read more...</span>

@@ -18,7 +18,7 @@ export default function Profile() {
               />
               <h4>Eric Simons</h4>
               <p>
-                Cofounder @GoThinkster, lived in Aol's HQ for a few months,
+                Cofounder @GoThinkster, lived in Aol&apos;s HQ for a few months,
                 kinda looks like Peeta from the Hunger Games
               </p>
               <button className="btn btn-sm btn-outline-secondary action-btn">
@@ -112,8 +112,8 @@ export default function Profile() {
               </div>
               <Link href="/article/the-song-you" className="preview-link">
                 <h1>
-                  The song you won't ever stop singing. No matter how hard you
-                  try.
+                  The song you won&apos;t ever stop singing. No matter how hard
+                  you try.
                 </h1>
                 <p>This is the description for the post.</p>
                 <span>Read more...</span>
