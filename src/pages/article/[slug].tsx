@@ -103,9 +103,9 @@ export default function Article() {
             <form className="card comment-form">
               <div className="card-block">
                 <textarea
-                  class="form-control"
+                  className="form-control"
                   placeholder="Write a comment..."
-                  rows="3"
+                  rows={3}
                 ></textarea>
               </div>
               <div className="card-footer">
