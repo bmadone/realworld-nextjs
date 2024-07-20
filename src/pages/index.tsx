@@ -84,7 +84,7 @@ function Pagination({
           >
             <Link
               className="page-link"
-              href=""
+              href="#"
               onClick={(e) => {
                 e.preventDefault();
                 onPageChange(page);
@@ -114,9 +114,12 @@ function Tags({
         {tags.map((tag) => (
           <Link
             key={tag}
-            href=""
+            href="#"
             className="tag-pill tag-default"
-            onClick={() => onTagClick(tag)}
+            onClick={(e) => {
+              e.preventDefault();
+              onTagClick(tag);
+            }}
           >
             {tag}
           </Link>
@@ -203,10 +206,12 @@ export default function Home({
                           className={clsx('nav-link', {
                             active: currentFeed === 'personal',
                           })}
-                          href=""
+                          href="#"
                           onClick={(e) => {
+                            e.preventDefault();
                             setCurrentFeed('personal');
                             setCurrentTag(undefined);
+                            setCurrentPage(1);
                           }}
                         >
                           Your Feed
@@ -218,10 +223,12 @@ export default function Home({
                         className={clsx('nav-link', {
                           active: currentFeed === 'global',
                         })}
-                        href=""
+                        href="#"
                         onClick={(e) => {
+                          e.preventDefault();
                           setCurrentFeed('global');
                           setCurrentTag(undefined);
+                          setCurrentPage(1);
                         }}
                       >
                         Global Feed
@@ -230,10 +237,15 @@ export default function Home({
                     {currentTag ? (
                       <li className="nav-item">
                         <Link
-                          href=""
+                          href="#"
                           className={clsx('nav-link', {
                             active: currentFeed === 'tag',
                           })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentFeed('tag');
+                            setCurrentPage(1);
+                          }}
                         >
                           <i className="ion-pound"></i> {currentTag}
                         </Link>
@@ -263,6 +275,7 @@ export default function Home({
                   onTagClick={(tag) => {
                     setCurrentTag(tag);
                     setCurrentFeed('tag');
+                    setCurrentPage(1);
                   }}
                 />
               </div>
@@ -282,9 +295,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     const [articlesRes, feedRes, tagsRes] = await Promise.all([
       fetch('https://api.realworld.io/api/articles?limit=10&offset=0'),
       fetch('https://api.realworld.io/api/articles/feed?limit=10&offset=0', {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
+        headers: token ? { Authorization: `Token ${token}` } : {},
       }),
       fetch('https://api.realworld.io/api/tags'),
     ]);
