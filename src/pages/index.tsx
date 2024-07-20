@@ -203,7 +203,7 @@ export default function Home({
     }
   );
 
-  const { data, error } = useSWR(
+  const { data, error, isLoading } = useSWR(
     url,
     () =>
       fetch(url, {
@@ -212,9 +212,12 @@ export default function Home({
         },
       }).then((res) => res.json()),
     {
-      fallbackData: isPersonalFeedSelected
-        ? initialFeedData
-        : initialArticlesData,
+      fallbackData:
+        currentFeed === 'personal'
+          ? initialFeedData
+          : currentFeed === 'global'
+            ? initialArticlesData
+            : { articles: [], articlesCount: 0 },
     }
   );
 
@@ -318,8 +321,10 @@ export default function Home({
                   </ul>
                 </div>
 
-                {error ? (
-                  <div>Error loading articles</div>
+                {!data.articles.length && isLoading ? (
+                  <div className="article-preview">Loading...</div>
+                ) : error ? (
+                  <div className="article-preview">Error loading articles</div>
                 ) : (
                   <ArticlesList
                     articles={data.articles}
