@@ -7,8 +7,9 @@ import { useUser } from '@/contexts/UserContext';
 import React from 'react';
 import cookie from 'cookie';
 import clsx from 'clsx';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { getAuthToken } from '@/utils/auth';
+import { useRouter } from 'next/router';
 
 interface HomeProps {
   initialArticlesData: { articles: Article[]; articlesCount: number };
@@ -17,7 +18,38 @@ interface HomeProps {
   user?: User;
 }
 
-function ArticlesList({ articles }: { articles: Article[] }) {
+function ArticlesList({
+  articles,
+  onFavoriteToggle,
+}: {
+  articles: Article[];
+  onFavoriteToggle: (slug: string, favorited: boolean) => void;
+}) {
+  const { user } = useUser();
+  const router = useRouter();
+
+  const handleFavoriteClick = async (slug: string, favorited: boolean) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const method = favorited ? 'DELETE' : 'POST';
+    const res = await fetch(
+      `https://api.realworld.io/api/articles/${slug}/favorite`,
+      {
+        method,
+        headers: {
+          Authorization: `Token ${getAuthToken()}`,
+        },
+      }
+    );
+
+    if (res.ok) {
+      onFavoriteToggle(slug, !favorited);
+    }
+  };
+
   if (!articles.length) {
     return <div className="article-preview">No articles are here... yet.</div>;
   }
@@ -40,7 +72,13 @@ function ArticlesList({ articles }: { articles: Article[] }) {
             {new Date(article.createdAt).toDateString()}
           </span>
         </div>
-        <button className="btn btn-outline-primary btn-sm pull-xs-right">
+        <button
+          className={clsx('btn btn-sm pull-xs-right', {
+            'btn-outline-primary': !article.favorited,
+            'btn-primary': article.favorited,
+          })}
+          onClick={() => handleFavoriteClick(article.slug, article.favorited)}
+        >
           <i className="ion-heart"></i> {article.favoritesCount}
         </button>
       </div>
@@ -180,6 +218,32 @@ export default function Home({
     }
   );
 
+  const handleFavoriteToggle = (slug: string, favorited: boolean) => {
+    mutate(
+      url,
+      (
+        currentData: { articles: Article[]; articlesCount: number } | undefined
+      ) => {
+        if (!currentData) return currentData;
+        return {
+          ...currentData,
+          articles: currentData.articles.map((article) =>
+            article.slug === slug
+              ? {
+                  ...article,
+                  favorited,
+                  favoritesCount: favorited
+                    ? article.favoritesCount + 1
+                    : article.favoritesCount - 1,
+                }
+              : article
+          ),
+        };
+      },
+      false
+    );
+  };
+
   return (
     <>
       <Head>
@@ -257,7 +321,10 @@ export default function Home({
                 {error ? (
                   <div>Error loading articles</div>
                 ) : (
-                  <ArticlesList articles={data.articles} />
+                  <ArticlesList
+                    articles={data.articles}
+                    onFavoriteToggle={handleFavoriteToggle}
+                  />
                 )}
 
                 <Pagination
