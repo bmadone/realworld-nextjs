@@ -1,36 +1,49 @@
-import Image from 'next/image';
+import { GetServerSideProps } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Article } from '@/api/types';
 
-export default function Article() {
+interface ArticlePageProps {
+  article: Article;
+}
+
+const ArticlePage: React.FC<ArticlePageProps> = ({ article }) => {
   return (
     <div className="article-page">
       <div className="banner">
         <div className="container">
-          <h1>How to build webapps that scale</h1>
+          <h1>{article.title}</h1>
 
           <div className="article-meta">
-            <Link href="/profile/eric-simons">
+            <Link href={`/profile/${article.author.username}`}>
               <Image
                 alt="Avatar"
                 width={100}
                 height={100}
-                src="http://i.imgur.com/Qr71crq.jpg"
+                src={article.author.image}
               />
             </Link>
             <div className="info">
-              <Link href="/profile/eric-simons" className="author">
-                Eric Simons
+              <Link
+                href={`/profile/${article.author.username}`}
+                className="author"
+              >
+                {article.author.username}
               </Link>
-              <span className="date">January 20th</span>
+              <span className="date">
+                {new Date(article.createdAt).toDateString()}
+              </span>
             </div>
             <button className="btn btn-sm btn-outline-secondary">
               <i className="ion-plus-round"></i>
-              &nbsp; Follow Eric Simons <span className="counter">(10)</span>
+              &nbsp; Follow {article.author.username}{' '}
+              <span className="counter">(10)</span>
             </button>
             &nbsp;&nbsp;
             <button className="btn btn-sm btn-outline-primary">
               <i className="ion-heart"></i>
-              &nbsp; Favorite Post <span className="counter">(29)</span>
+              &nbsp; Favorite Post{' '}
+              <span className="counter">({article.favoritesCount})</span>
             </button>
             <button className="btn btn-sm btn-outline-secondary">
               <i className="ion-edit"></i> Edit Article
@@ -45,19 +58,18 @@ export default function Article() {
       <div className="container page">
         <div className="row article-content">
           <div className="col-md-12">
-            <p>
-              Web development technologies have evolved at an incredible clip
-              over the past few years.
-            </p>
-            <h2 id="introducing-ionic">Introducing RealWorld.</h2>
-            <p>
-              It&apos;s a great solution for learning how other frameworks work.
-            </p>
+            <p>{article.description}</p>
+            <div
+              dangerouslySetInnerHTML={{
+                __html: article.body.replace(/\n/g, '<br />'),
+              }}
+            />
             <ul className="tag-list">
-              <li className="tag-default tag-pill tag-outline">realworld</li>
-              <li className="tag-default tag-pill tag-outline">
-                implementations
-              </li>
+              {article.tagList.map((tag) => (
+                <li key={tag} className="tag-default tag-pill tag-outline">
+                  {tag}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -66,28 +78,34 @@ export default function Article() {
 
         <div className="article-actions">
           <div className="article-meta">
-            <Link href="profile.html">
+            <Link href={`/profile/${article.author.username}`}>
               <Image
                 alt="Avatar"
-                src="http://i.imgur.com/Qr71crq.jpg"
+                src={article.author.image}
                 width={30}
                 height={26}
               />
             </Link>
             <div className="info">
-              <Link href="" className="author">
-                Eric Simons
+              <Link
+                href={`/profile/${article.author.username}`}
+                className="author"
+              >
+                {article.author.username}
               </Link>
-              <span className="date">January 20th</span>
+              <span className="date">
+                {new Date(article.createdAt).toDateString()}
+              </span>
             </div>
             <button className="btn btn-sm btn-outline-secondary">
               <i className="ion-plus-round"></i>
-              &nbsp; Follow Eric Simons
+              &nbsp; Follow {article.author.username}
             </button>
             &nbsp;
             <button className="btn btn-sm btn-outline-primary">
               <i className="ion-heart"></i>
-              &nbsp; Favorite Article <span className="counter">(29)</span>
+              &nbsp; Favorite Article{' '}
+              <span className="counter">({article.favoritesCount})</span>
             </button>
             <button className="btn btn-sm btn-outline-secondary">
               <i className="ion-edit"></i> Edit Article
@@ -110,9 +128,9 @@ export default function Article() {
               </div>
               <div className="card-footer">
                 <Image
-                  src="http://i.imgur.com/Qr71crq.jpg"
+                  src={article.author.image}
                   className="comment-author-img"
-                  alt={'Alt'}
+                  alt="Avatar"
                   width={30}
                   height={26}
                 />
@@ -120,6 +138,7 @@ export default function Article() {
               </div>
             </form>
 
+            {/* Example comment card */}
             <div className="card">
               <div className="card-block">
                 <p className="card-text">
@@ -128,34 +147,12 @@ export default function Article() {
                 </p>
               </div>
               <div className="card-footer">
-                <Link href="/profile/author" className="comment-author">
+                <Link
+                  href={`/profile/${article.author.username}`}
+                  className="comment-author"
+                >
                   <Image
-                    src="http://i.imgur.com/Qr71crq.jpg"
-                    className="comment-author-img"
-                    alt={''}
-                    width={30}
-                    height={26}
-                  />
-                </Link>
-                &nbsp;
-                <Link href="/profile/jacob-schmidt" className="comment-author">
-                  Jacob Schmidt
-                </Link>
-                <span className="date-posted">Dec 29th</span>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-block">
-                <p className="card-text">
-                  With supporting text below as a natural lead-in to additional
-                  content.
-                </p>
-              </div>
-              <div className="card-footer">
-                <Link href="/profile/author" className="comment-author">
-                  <Image
-                    src="http://i.imgur.com/Qr71crq.jpg"
+                    src={article.author.image}
                     className="comment-author-img"
                     alt="Avatar"
                     width={30}
@@ -163,18 +160,53 @@ export default function Article() {
                   />
                 </Link>
                 &nbsp;
-                <Link href="/profile/jacob-schmidt" className="comment-author">
-                  Jacob Schmidt
+                <Link
+                  href={`/profile/${article.author.username}`}
+                  className="comment-author"
+                >
+                  {article.author.username}
                 </Link>
-                <span className="date-posted">Dec 29th</span>
+                <span className="date-posted">
+                  {new Date(article.createdAt).toDateString()}
+                </span>
                 <span className="mod-options">
                   <i className="ion-trash-a"></i>
                 </span>
               </div>
             </div>
+
+            {/* Repeat the comment card as needed */}
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  try {
+    const res = await fetch(
+      'https://api.realworld.io/api/articles/Ill-quantify-the-redundant-TCP-bus-that-should-hard-drive-the-ADP-bandwidth!-553'
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch article: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    const article = data.article;
+
+    return {
+      props: {
+        article,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    return {
+      notFound: true,
+    };
+  }
+};
+
+export default ArticlePage;

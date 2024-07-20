@@ -1,8 +1,16 @@
+import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Article, User } from '@/api/types';
 
-export default function Home() {
+interface HomeProps {
+  articles: Article[];
+  tags: string[];
+  user?: User;
+}
+
+export default function Home({ articles, tags }: HomeProps) {
   return (
     <>
       <Head>
@@ -36,81 +44,52 @@ export default function Home() {
                   </ul>
                 </div>
 
-                <div className="article-preview">
-                  <div className="article-meta">
-                    <Link href="/profile/eric-simons">
-                      <Image
-                        alt="Avatar"
-                        src="http://i.imgur.com/Qr71crq.jpg"
-                        width={30}
-                        height={26}
-                      />
-                    </Link>
-                    <div className="info">
-                      <Link href="/profile/eric-simons" className="author">
-                        Eric Simons
+                {articles.map((article) => (
+                  <div key={article.slug} className="article-preview">
+                    <div className="article-meta">
+                      <Link href={`/profile/${article.author.username}`}>
+                        <Image
+                          alt="Avatar"
+                          src={article.author.image}
+                          width={30}
+                          height={26}
+                        />
                       </Link>
-                      <span className="date">January 20th</span>
+                      <div className="info">
+                        <Link
+                          href={`/profile/${article.author.username}`}
+                          className="author"
+                        >
+                          {article.author.username}
+                        </Link>
+                        <span className="date">
+                          {new Date(article.createdAt).toDateString()}
+                        </span>
+                      </div>
+                      <button className="btn btn-outline-primary btn-sm pull-xs-right">
+                        <i className="ion-heart"></i> {article.favoritesCount}
+                      </button>
                     </div>
-                    <button className="btn btn-outline-primary btn-sm pull-xs-right">
-                      <i className="ion-heart"></i> 29
-                    </button>
-                  </div>
-                  <Link
-                    href="/article/how-to-build-webapps-that-scale"
-                    className="preview-link"
-                  >
-                    <h1>How to build webapps that scale</h1>
-                    <p>This is the description for the post.</p>
-                    <span>Read more...</span>
-                    <ul className="tag-list">
-                      <li className="tag-default tag-pill tag-outline">
-                        realworld
-                      </li>
-                      <li className="tag-default tag-pill tag-outline">
-                        implementations
-                      </li>
-                    </ul>
-                  </Link>
-                </div>
-
-                <div className="article-preview">
-                  <div className="article-meta">
-                    <Link href="/profile/albert-pai">
-                      <Image
-                        width={32}
-                        height={32}
-                        alt="Avatar"
-                        src="http://i.imgur.com/N4VcUeJ.jpg"
-                      />
+                    <Link
+                      href={`/article/${article.slug}`}
+                      className="preview-link"
+                    >
+                      <h1>{article.title}</h1>
+                      <p>{article.description}</p>
+                      <span>Read more...</span>
+                      <ul className="tag-list">
+                        {article.tagList.map((tag) => (
+                          <li
+                            key={tag}
+                            className="tag-default tag-pill tag-outline"
+                          >
+                            {tag}
+                          </li>
+                        ))}
+                      </ul>
                     </Link>
-                    <div className="info">
-                      <Link href="/profile/albert-pai" className="author">
-                        Albert Pai
-                      </Link>
-                      <span className="date">January 20th</span>
-                    </div>
-                    <button className="btn btn-outline-primary btn-sm pull-xs-right">
-                      <i className="ion-heart"></i> 32
-                    </button>
                   </div>
-                  <Link href="/article/the-song-you" className="preview-link">
-                    <h1>
-                      The song you won&apos;t ever stop singing. No matter how
-                      hard you try.
-                    </h1>
-                    <p>This is the description for the post.</p>
-                    <span>Read more...</span>
-                    <ul className="tag-list">
-                      <li className="tag-default tag-pill tag-outline">
-                        realworld
-                      </li>
-                      <li className="tag-default tag-pill tag-outline">
-                        implementations
-                      </li>
-                    </ul>
-                  </Link>
-                </div>
+                ))}
 
                 <ul className="pagination">
                   <li className="page-item active">
@@ -131,30 +110,15 @@ export default function Home() {
                   <p>Popular Tags</p>
 
                   <div className="tag-list">
-                    <Link href="" className="tag-pill tag-default">
-                      programming
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      javascript
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      emberjs
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      angularjs
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      react
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      mean
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      node
-                    </Link>
-                    <Link href="" className="tag-pill tag-default">
-                      rails
-                    </Link>
+                    {tags.map((tag) => (
+                      <Link
+                        key={tag}
+                        href={`/tag/${tag}`}
+                        className="tag-pill tag-default"
+                      >
+                        {tag}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -165,3 +129,34 @@ export default function Home() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  try {
+    const [articlesRes, tagsRes] = await Promise.all([
+      fetch('https://api.realworld.io/api/articles?limit=10&offset=0'),
+      fetch('https://api.realworld.io/api/tags'),
+    ]);
+
+    if (!articlesRes.ok || !tagsRes.ok) {
+      throw new Error('Failed to fetch data');
+    }
+
+    const articlesData = await articlesRes.json();
+    const tagsData = await tagsRes.json();
+
+    return {
+      props: {
+        articles: articlesData.articles,
+        tags: tagsData.tags,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    return {
+      props: {
+        articles: [],
+        tags: [],
+      },
+    };
+  }
+};

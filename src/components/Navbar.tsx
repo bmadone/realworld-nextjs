@@ -1,7 +1,10 @@
+import { useUser } from '@/contexts/UserContext';
 import Link from 'next/link';
 
-export default function Navbar(props: { guest: boolean }) {
-  if (props.guest) {
+export default function Navbar() {
+  const { user } = useUser();
+
+  if (!user) {
     return (
       <nav className="navbar navbar-light">
         <div className="container">
@@ -44,19 +47,17 @@ export default function Navbar(props: { guest: boolean }) {
           </li>
           <li className="nav-item">
             <Link className="nav-link" href="/editor">
-              {' '}
-              <i className="ion-compose"></i>&nbsp;New Article{' '}
+              <i className="ion-compose"></i>&nbsp;New Article
             </Link>
           </li>
           <li className="nav-item">
             <Link className="nav-link" href="/settings">
-              {' '}
-              <i className="ion-gear-a"></i>&nbsp;Settings{' '}
+              <i className="ion-gear-a"></i>&nbsp;Settings
             </Link>
           </li>
           <li className="nav-item">
-            <Link className="nav-link" href="/profile/eric-simons">
-              Eric Simons
+            <Link className="nav-link" href={`/profile/${user.username}`}>
+              {user.username}
             </Link>
           </li>
         </ul>
