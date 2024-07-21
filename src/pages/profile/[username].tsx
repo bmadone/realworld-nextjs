@@ -4,15 +4,23 @@ import Image from 'next/image';
 import useSWR from 'swr';
 import { useRouter } from 'next/router';
 import { getAuthToken } from '@/utils/auth';
-import { Article, User } from '@/api/types';
+import { Article, Author, User } from '@/api/types';
 import cookie from 'cookie';
 import { useUser } from '@/contexts/UserContext';
 import React from 'react';
 
 interface ProfileProps {
-  initialProfile: User;
+  initialProfile: Author;
   initialArticles: Article[];
   initialFavoritedArticles: Article[];
+}
+
+interface ProfileData {
+  profile: Author;
+}
+
+interface ArticleData {
+  articles: Article[];
 }
 
 const fetcher = (url: string) =>
@@ -31,13 +39,15 @@ export default function Profile({
   const user = useUser();
   const { username } = router.query;
 
-  const { data: profileData, error: profileError } = useSWR(
+  const { data: profileData, error: profileError } = useSWR<ProfileData>(
     username ? `https://api.realworld.io/api/profiles/${username}` : null,
     fetcher,
     { fallbackData: { profile: initialProfile } }
   );
 
-  const { data: articlesData, error: articlesError } = useSWR(
+  console.log('profileError', profileError);
+
+  const { data: articlesData, error: articlesError } = useSWR<ArticleData>(
     username
       ? `https://api.realworld.io/api/articles?author=${username}&limit=10&offset=0`
       : null,
@@ -45,17 +55,18 @@ export default function Profile({
     { fallbackData: { articles: initialArticles } }
   );
 
-  const { data: favoritedArticlesData, error: favoritedArticlesError } = useSWR(
-    username
-      ? `https://api.realworld.io/api/articles?favorited=${username}&limit=10&offset=0`
-      : null,
-    fetcher,
-    { fallbackData: { articles: initialFavoritedArticles } }
-  );
+  const { data: favoritedArticlesData, error: favoritedArticlesError } =
+    useSWR<ArticleData>(
+      username
+        ? `https://api.realworld.io/api/articles?favorited=${username}&limit=10&offset=0`
+        : null,
+      fetcher,
+      { fallbackData: { articles: initialFavoritedArticles } }
+    );
 
-  const profile = profileData.profile;
-  const articles = articlesData.articles || [];
-  const favoritedArticles = favoritedArticlesData.articles || [];
+  const profile = profileData?.profile;
+  const articles = articlesData?.articles || [];
+  const favoritedArticles = favoritedArticlesData?.articles || [];
 
   const [currentView, setCurrentView] = React.useState<'my' | 'favourite'>(
     'my'
@@ -67,6 +78,10 @@ export default function Profile({
 
   if (!profileData || !articlesData || !favoritedArticlesData) {
     return <div>Loading...</div>;
+  }
+
+  if (!profile) {
+    return <div>Profile not found</div>;
   }
 
   return (
@@ -293,6 +308,15 @@ export const getServerSideProps: GetServerSideProps = async ({
         }
       ),
     ]);
+
+    if (profileRes.status === 404) {
+      return {
+        redirect: {
+          destination: '/404',
+          permanent: false,
+        },
+      };
+    }
 
     if (!profileRes.ok || !articlesRes.ok || !favoritedArticlesRes.ok) {
       throw new Error('Failed to fetch data');

@@ -53,6 +53,7 @@ function ArticlesList({
   if (!articles.length) {
     return <div className="article-preview">No articles are here... yet.</div>;
   }
+
   return articles.map((article) => (
     <div key={article.slug} className="article-preview">
       <div className="article-meta">
@@ -203,6 +204,13 @@ export default function Home({
     }
   );
 
+  const fallbackData =
+    currentFeed === 'personal'
+      ? initialFeedData
+      : currentFeed === 'global'
+        ? initialArticlesData
+        : { articles: [], articlesCount: 0 };
+
   const { data, error, isLoading } = useSWR(
     url,
     () =>
@@ -212,14 +220,10 @@ export default function Home({
         },
       }).then((res) => res.json()),
     {
-      fallbackData:
-        currentFeed === 'personal'
-          ? initialFeedData
-          : currentFeed === 'global'
-            ? initialArticlesData
-            : { articles: [], articlesCount: 0 },
+      fallbackData,
     }
   );
+  console.log('data:', data);
 
   const handleFavoriteToggle = (slug: string, favorited: boolean) => {
     mutate(
@@ -377,6 +381,8 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     }
 
     const initialArticlesData = await articlesRes.json();
+    console.log('initialArticlesData:', initialArticlesData);
+
     const initialFeedData = await feedRes.json();
     const tagsData = await tagsRes.json();
 

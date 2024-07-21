@@ -1,85 +1,58 @@
-import React from 'react';
-import Link from 'next/link';
-import useSWR from 'swr';
-import { getAuthToken, setAuthToken } from '@/utils/auth';
-import { Article, User } from '@/api/types';
+// pages/settings.tsx
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useUser } from '@/contexts/UserContext';
+import { setAuthToken, getAuthToken } from '@/utils/auth';
 
-interface Profile {
-  username: string;
-  bio: string | null;
-  image: string;
-  following: boolean;
-}
-
-interface SettingsProps {
-  initialProfile: Profile;
-  initialArticles: Article[];
-  initialFavoritedArticles: Article[];
-}
-
-const fetcher = (url: string) =>
-  fetch(url, {
-    headers: {
-      Authorization: `Token ${getAuthToken()}`,
-    },
-  }).then((res) => res.json());
-
-export default function Settings({
-  initialProfile,
-  initialArticles,
-  initialFavoritedArticles,
-}: SettingsProps) {
-  const router = useRouter();
-
-  const { data: profileData, error: profileError } = useSWR(
-    'https://api.realworld.io/api/profiles/bmarvinb',
-    fetcher,
-    { fallbackData: { profile: initialProfile } }
-  );
-
-  const { data: articlesData, error: articlesError } = useSWR(
-    'https://api.realworld.io/api/articles?author=bmarvinb&limit=10&offset=0',
-    fetcher,
-    { fallbackData: { articles: initialArticles } }
-  );
-
-  const { data: favoritedArticlesData, error: favoritedArticlesError } = useSWR(
-    'https://api.realworld.io/api/articles?favorited=bmarvinb&limit=10&offset=0',
-    fetcher,
-    { fallbackData: { articles: initialFavoritedArticles } }
-  );
-
-  const profile = profileData?.profile;
-  const articles = articlesData?.articles || [];
-  const favoritedArticles = favoritedArticlesData?.articles || [];
-
-  const [formData, setFormData] = React.useState({
-    image: profile.image,
-    username: profile.username,
-    bio: profile.bio || '',
-    email: '', // Assuming email is fetched from a different endpoint or context
+export default function Settings() {
+  const { user, setUser, logout } = useUser();
+  const [formData, setFormData] = useState({
+    image: '',
+    username: '',
+    bio: '',
+    email: '',
     password: '',
   });
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      router.push('/');
+      return;
+    }
+
+    if (user) {
+      setFormData({
+        image: user.image || '',
+        username: user.username || '',
+        bio: user.bio || '',
+        email: user.email || '',
+        password: '',
+      });
+    }
+  }, [user, router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = getAuthToken();
-
     if (!token) {
-      router.push('/login');
+      alert('No authentication token found');
       return;
     }
 
     try {
-      const res = await fetch('https://api.realworld.io/api/user', {
+      const response = await fetch('https://api.realworld.io/api/user', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -88,37 +61,24 @@ export default function Settings({
         body: JSON.stringify({ user: formData }),
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to update profile');
+      if (!response.ok) {
+        throw new Error('Failed to update user');
       }
 
-      const { user } = await res.json();
-      setAuthToken(user.token); // Update the token if it has changed
-      // Optionally, update the local state with the new user data
-      setFormData({
-        image: user.image,
-        username: user.username,
-        bio: user.bio || '',
-        email: user.email,
-        password: '', // Clear the password field
-      });
-
-      // Optionally, show a success message or redirect the user
-      alert('Profile updated successfully');
+      const data = await response.json();
+      setUser(data.user);
+      setAuthToken(data.user.token); // Update the token in cookies
+      router.push(`/profile/${data.user.username}`);
     } catch (error) {
-      console.error('Error updating profile:', error);
-      // Optionally, show an error message
-      alert('Failed to update profile');
+      console.error(error);
+      alert('Failed to update settings');
     }
   };
 
-  if (profileError || articlesError || favoritedArticlesError) {
-    return <div>Error loading data</div>;
-  }
-
-  if (!profileData || !articlesData || !favoritedArticlesData) {
-    return <div>Loading...</div>;
-  }
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   return (
     <div className="settings-page">
@@ -126,10 +86,6 @@ export default function Settings({
         <div className="row">
           <div className="col-md-6 offset-md-3 col-xs-12">
             <h1 className="text-xs-center">Your Settings</h1>
-
-            <ul className="error-messages">
-              <li>That name is required</li>
-            </ul>
 
             <form onSubmit={handleSubmit}>
               <fieldset>
@@ -183,172 +139,21 @@ export default function Settings({
                     onChange={handleChange}
                   />
                 </fieldset>
-                <button className="btn btn-lg btn-primary pull-xs-right">
+                <button
+                  className="btn btn-lg btn-primary pull-xs-right"
+                  type="submit"
+                >
                   Update Settings
                 </button>
               </fieldset>
             </form>
             <hr />
-            <button className="btn btn-outline-danger">
+            <button className="btn btn-outline-danger" onClick={handleLogout}>
               Or click here to logout.
             </button>
-          </div>
-        </div>
-        <div className="row">
-          <div className="col-md-12">
-            <h2 className="text-xs-center">Your Articles</h2>
-            {articles.length === 0 ? (
-              <p>No articles are here... yet.</p>
-            ) : (
-              <ul className="article-list">
-                {articles.map((article) => (
-                  <li key={article.slug} className="article-preview">
-                    <div className="article-meta">
-                      <Link href={`/profile/${article.author.username}`}>
-                        <img
-                          src={article.author.image}
-                          alt={article.author.username}
-                        />
-                      </Link>
-                      <div className="info">
-                        <Link
-                          href={`/profile/${article.author.username}`}
-                          className="author"
-                        >
-                          {article.author.username}
-                        </Link>
-                        <span className="date">
-                          {new Date(article.createdAt).toDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <Link
-                      href={`/article/${article.slug}`}
-                      className="preview-link"
-                    >
-                      <h1>{article.title}</h1>
-                      <p>{article.description}</p>
-                      <span>Read more...</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-        <div className="row">
-          <div className="col-md-12">
-            <h2 className="text-xs-center">Favorited Articles</h2>
-            {favoritedArticles.length === 0 ? (
-              <p>No articles are here... yet.</p>
-            ) : (
-              <ul className="article-list">
-                {favoritedArticles.map((article) => (
-                  <li key={article.slug} className="article-preview">
-                    <div className="article-meta">
-                      <Link href={`/profile/${article.author.username}`}>
-                        <img
-                          src={article.author.image}
-                          alt={article.author.username}
-                        />
-                      </Link>
-                      <div className="info">
-                        <Link
-                          href={`/profile/${article.author.username}`}
-                          className="author"
-                        >
-                          {article.author.username}
-                        </Link>
-                        <span className="date">
-                          {new Date(article.createdAt).toDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <Link
-                      href={`/article/${article.slug}`}
-                      className="preview-link"
-                    >
-                      <h1>{article.title}</h1>
-                      <p>{article.description}</p>
-                      <span>Read more...</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const cookies = cookie.parse(req.headers.cookie || '');
-  const token = cookies.auth_token || null;
-
-  if (!token) {
-    return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
-      },
-    };
-  }
-
-  try {
-    const [profileRes, articlesRes, favoritedArticlesRes] = await Promise.all([
-      fetch('https://api.realworld.io/api/profiles/bmarvinb', {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
-      }),
-      fetch(
-        'https://api.realworld.io/api/articles?author=bmarvinb&limit=10&offset=0',
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        }
-      ),
-      fetch(
-        'https://api.realworld.io/api/articles?favorited=bmarvinb&limit=10&offset=0',
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        }
-      ),
-    ]);
-
-    if (!profileRes.ok || !articlesRes.ok || !favoritedArticlesRes.ok) {
-      throw new Error('Failed to fetch data');
-    }
-
-    const { profile } = await profileRes.json();
-    const { articles } = await articlesRes.json();
-    const { articles: favoritedArticles } = await favoritedArticlesRes.json();
-
-    return {
-      props: {
-        initialProfile: profile,
-        initialArticles: articles,
-        initialFavoritedArticles: favoritedArticles,
-      },
-    };
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    return {
-      props: {
-        initialProfile: {
-          username: '',
-          bio: '',
-          image: '',
-          following: false,
-        },
-        initialArticles: [],
-        initialFavoritedArticles: [],
-      },
-    };
-  }
-};
