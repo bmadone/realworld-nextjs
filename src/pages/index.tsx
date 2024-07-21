@@ -223,7 +223,6 @@ export default function Home({
       fallbackData,
     }
   );
-  console.log('data:', data);
 
   const handleFavoriteToggle = (slug: string, favorited: boolean) => {
     mutate(
@@ -381,7 +380,6 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     }
 
     const initialArticlesData = await articlesRes.json();
-    console.log('initialArticlesData:', initialArticlesData);
 
     const initialFeedData = await feedRes.json();
     const tagsData = await tagsRes.json();

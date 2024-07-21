@@ -30,7 +30,7 @@ const createArticle = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Token ${getAuthToken()}`, // Replace with your actual token retrieval method
+      Authorization: `Token ${getAuthToken()}`,
     },
     body: JSON.stringify({ article: articleData }),
   });

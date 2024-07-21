@@ -45,8 +45,6 @@ export default function Profile({
     { fallbackData: { profile: initialProfile } }
   );
 
-  console.log('profileError', profileError);
-
   const { data: articlesData, error: articlesError } = useSWR<ArticleData>(
     username
       ? `https://api.realworld.io/api/articles?author=${username}&limit=10&offset=0`
