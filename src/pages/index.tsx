@@ -50,7 +50,7 @@ function ArticlesList({
     }
   };
 
-  if (!articles.length) {
+  if (!articles?.length) {
     return <div className="article-preview">No articles are here... yet.</div>;
   }
 
@@ -324,7 +324,7 @@ export default function Home({
                   </ul>
                 </div>
 
-                {!data.articles.length && isLoading ? (
+                {!data?.articles?.length && isLoading ? (
                   <div className="article-preview">Loading...</div>
                 ) : error ? (
                   <div className="article-preview">Error loading articles</div>
